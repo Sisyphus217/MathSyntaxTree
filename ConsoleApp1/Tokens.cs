@@ -15,17 +15,18 @@
 
     public enum OperatorType
     {
-        Addition,
-        Subtraction,
-        Multiplication,
-        Division,
-        OpeningBracket,
-        ClosingBracket
+        Addition = 1,
+        Subtraction = 2,
+        Multiplication = 3,
+        Division = 4,
+        OpeningBracket = 5,
+        ClosingBracket =6 
     }
 
     public class OperatorToken : IToken
     {
         public OperatorType OperatorType { get; }
+        public List<IToken> Children { get; } = new List<IToken>();
 
         public OperatorToken(OperatorType operatorType)
         {
