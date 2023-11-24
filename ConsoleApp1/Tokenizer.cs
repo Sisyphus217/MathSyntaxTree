@@ -14,7 +14,7 @@ namespace MathSyntaxTree
             _infixNotationTokens = new List<IToken>();
         }
 
-        public IEnumerable<IToken> Parse(string expression)
+        public List<IToken> Parse(string expression)
         {
             Reset();
             foreach (char next in expression)
@@ -102,7 +102,7 @@ namespace MathSyntaxTree
             };
         }
 
-        private IEnumerable<IToken> GetResult()
+        private List<IToken> GetResult()
         {
             if (_valueTokenBuilder.Length > 0)
             {
@@ -111,7 +111,7 @@ namespace MathSyntaxTree
                 _infixNotationTokens.Add(token);
             }
 
-            return _infixNotationTokens.ToList();
+            return _infixNotationTokens;
         }
 
         private readonly StringBuilder _valueTokenBuilder;

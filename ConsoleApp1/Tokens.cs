@@ -26,7 +26,7 @@
     public class OperatorToken : IToken
     {
         public OperatorType OperatorType { get; }
-        public List<IToken> Children { get; } = new List<IToken>();
+        public List<IToken> Children { get; set; } = new List<IToken>();
 
         public OperatorToken(OperatorType operatorType)
         {
