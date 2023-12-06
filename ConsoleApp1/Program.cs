@@ -20,9 +20,11 @@ namespace MathSyntaxTree
         OperatorType OperatorType { get; }
         List<INode> Children { get; }
     }
-    public interface INodeBuilder
+
+    public interface IFunctionNode : INode
     {
-        INode BuildNode(IToken token, params INode[] children);
+        FunctionType FunctionType { get; }
+        List<INode> Children { get; }
     }
 
     public class MathOperandNode : IOperandNode
@@ -40,6 +42,30 @@ namespace MathSyntaxTree
         }
     }
 
+    public class MathFunctionNode : IFunctionNode
+    {
+        public FunctionType FunctionType { get; }
+        public List<INode> Children { get; }
+
+        public MathFunctionNode(FunctionType functionType, List<INode> children)
+        {
+            FunctionType = functionType;
+            Children = new List<INode>();
+
+        }
+        public double Evaluate()
+        {
+            switch (FunctionType)
+            {
+                case FunctionType.Sin:
+                    return Math.Sin(Children[0].Evaluate());
+                case FunctionType.Cos:
+                    return Math.Cos(Children[0].Evaluate());
+                default:
+                    throw new InvalidOperationException("Invalid function type");
+            }
+        }
+    }
     public class MathOperatorNode : IOperatorNode
     {
         public OperatorType OperatorType { get; }
@@ -81,53 +107,12 @@ namespace MathSyntaxTree
             double leftValue = Children[0].Evaluate();
             double rightValue = Children[1].Evaluate();
 
-            // Adjust the sign for subtraction
             return rightValue - leftValue;
-        }
-    }
-    public class SignedMathOperandNode : IOperandNode
-    {
-        private readonly IOperandNode _operand;
-        private readonly bool _isNegative;
-
-        public double Value => _isNegative ? -_operand.Value : _operand.Value;
-
-        public SignedMathOperandNode(IOperandNode operand, bool isNegative = false)
-        {
-            _operand = operand ?? throw new ArgumentNullException(nameof(operand));
-            _isNegative = isNegative;
-        }
-
-        public double Evaluate()
-        {
-            return Value;
-        }
-    }
-    public class MathNodeBuilder : INodeBuilder
-    {
-        public INode BuildNode(IToken token, params INode[] children)
-        {
-            if (token is OperandToken operandToken)
-            {
-                return new MathOperandNode(operandToken.Value);
-            }
-            else if (token is OperatorToken operatorToken)
-            {
-                return new MathOperatorNode(operatorToken.OperatorType, children);
-            }
-            throw new InvalidOperationException("Invalid token type");
         }
     }
 
     public class MathASTBuilder
     {
-        private readonly INodeBuilder _nodeBuilder;
-
-        public MathASTBuilder(INodeBuilder nodeBuilder)
-        {
-            _nodeBuilder = nodeBuilder;
-        }
-
         public List<INode> BuildSyntaxTree(List<IToken> infixNotationTokens)
         {
             List<INode> tree = new List<INode>();
@@ -140,18 +125,37 @@ namespace MathSyntaxTree
                 {
                     operandStack.Push(new MathOperandNode(((OperandToken)token).Value));
                 }
+/*                else if (token is FunctionToken)
+                {
+                    FunctionToken functionToken = (FunctionToken)token;
+
+                    List<INode> argumentNodes = new List<INode>();
+                    foreach (var argument in functionToken.Arguments)
+                    {
+                        if (argument is INode argumentNode)
+                        {
+                            argumentNodes.Add(argumentNode);
+                        }
+                        else
+                        {
+                            throw new InvalidOperationException("Invalid argument type for function node");
+                        }
+                    }
+                    operandStack.Push(new MathFunctionNode(functionToken.FunctionType, argumentNodes));
+                }*/
+
                 else if (token is OperatorToken)
                 {
                     OperatorToken currentOperator = (OperatorToken)token;
 
                     if (currentOperator.OperatorType == OperatorType.OpeningBracket)
                     {
-                        // Открывающая скобка - помещаем ее в стек
+                        // Открывающая скобка  помещаем ее в стек
                         operatorStack.Push(currentOperator);
                     }
                     else if (currentOperator.OperatorType == OperatorType.ClosingBracket)
                     {
-                        // Закрывающая скобка - обрабатываем выражение в скобках
+                        // Закрывающая скобка  обрабатываем выражение в скобках
                         while (operatorStack.Count > 0 && operatorStack.Peek().OperatorType != OperatorType.OpeningBracket)
                         {
                             PopAndAddOperatorToTree(operatorStack, operandStack);
@@ -184,9 +188,7 @@ namespace MathSyntaxTree
                 PopAndAddOperatorToTree(operatorStack, operandStack);
             }
 
-            // Теперь tree содержит список узлов синтаксического дерева, представленных объектами MathOperandNode и MathOperatorNode
-            // Вам может потребоваться дополнительно обработать этот список с учетом ваших классов
-            tree.Add(operandStack.Pop());
+            tree.AddRange(operandStack.Reverse());
 
             return tree;
         }
@@ -202,13 +204,8 @@ namespace MathSyntaxTree
             operandStack.Push(new MathOperatorNode(poppedOperator.OperatorType, operandStack.Pop(), operandStack.Pop()));
         }
 
-
-
-
         private int GetOperatorPriority(OperatorType operatorType)
         {
-            // Реализуйте логику для возвращения приоритета оператора
-            // Например, умножение и деление имеют более высокий приоритет, чем сложение и вычитание
             switch (operatorType)
             {
                 case OperatorType.Multiplication:
@@ -218,22 +215,20 @@ namespace MathSyntaxTree
                 case OperatorType.Subtraction:
                     return 1;
                 default:
-                    return 0; // По умолчанию
+                    return 0; 
             }
         }
-
     }
 
     class Program
     {
         static void Main()
         {
-            string mathExpression = "(2+6)/(8*(8/3))*(2-6)*2";
+            string mathExpression = "Sin()";
             Tokenizer tokenizer = new Tokenizer();
             List<IToken> infixNotationTokens = tokenizer.Parse(mathExpression);
 
-            MathNodeBuilder nodeBuilder = new MathNodeBuilder();
-            MathASTBuilder astBuilder = new MathASTBuilder(nodeBuilder);
+            MathASTBuilder astBuilder = new MathASTBuilder();
             var rootNode = astBuilder.BuildSyntaxTree(infixNotationTokens);
 
             PrintTreeStructure(rootNode[0], 0);

@@ -15,12 +15,12 @@
 
     public enum OperatorType
     {
-        Addition = 1,
-        Subtraction = 2,
-        Multiplication = 3,
-        Division = 4,
-        OpeningBracket = 5,
-        ClosingBracket =6 
+        Addition,
+        Subtraction,
+        Multiplication,
+        Division,
+        OpeningBracket,
+        ClosingBracket, 
     }
 
     public class OperatorToken : IToken
@@ -31,6 +31,33 @@
         public OperatorToken(OperatorType operatorType)
         {
             OperatorType = operatorType;
+        }
+    }
+    public enum FunctionType
+    {
+        Str,
+        Sin,
+        Cos,
+        Tan,
+        Sqr,
+        Ln,
+        Pow,
+        Abs,
+        Area,
+        Perimeter,
+        X,
+        Y,
+        Z,
+    }
+
+    public class FunctionToken : IToken
+    {
+        public FunctionType FunctionType { get; }
+        public List<IToken> Arguments { get; set; } = new List<IToken>();
+
+        public FunctionToken(FunctionType functionType)
+        {
+            FunctionType = functionType;
         }
     }
 }
