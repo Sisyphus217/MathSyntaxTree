@@ -61,14 +61,12 @@ namespace MathSyntaxTree
                 case FunctionType.Str:
                     if (typeof(T) == typeof(string))
                     {
-                        // Если тип T - строка, возвращаем строку
                         string strResult = $"String result: {Children[0].Evaluate()}";
                         Console.WriteLine(strResult);
                         return (T)(object)strResult;
                     }
                     else
                     {
-                        // В противном случае выбрасываем исключение, так как Str не применимо к другим типам
                         throw new InvalidOperationException("Invalid type for Str function");
                     }
                 case FunctionType.Sin:
@@ -77,15 +75,14 @@ namespace MathSyntaxTree
                     return (T)(object)Math.Cos(Convert.ToDouble(Children[0].Evaluate()));
                 case FunctionType.Tan:
                     return (T)(object)Math.Tan(Convert.ToDouble(Children[0].Evaluate()));
-                case FunctionType.Sqr:
-                    return (T)(object)Math.Pow(Convert.ToDouble(Children[0].Evaluate()), 2);
+                case FunctionType.Sqrt:
+                    return (T)(object)Math.Sqrt(Convert.ToDouble(Children[0].Evaluate()));
                 case FunctionType.Ln:
                     return (T)(object)Math.Log(Convert.ToDouble(Children[0].Evaluate()));
                 case FunctionType.Pow:
                     return (T)(object)Math.Pow(Convert.ToDouble(Children[0].Evaluate()), Convert.ToDouble(Children[1].Evaluate()));
                 case FunctionType.Abs:
                     return (T)(object)Math.Abs(Convert.ToDouble(Children[0].Evaluate()));
-                // Добавьте другие функции по аналогии
                 default:
                     throw new InvalidOperationException("Invalid function type");
             }
@@ -109,7 +106,7 @@ namespace MathSyntaxTree
             switch (OperatorType)
             {
                 case OperatorType.Addition:
-                    return Add();
+                    return Addition();
                 case OperatorType.Subtraction:
                     return Subtract();
                 case OperatorType.Multiplication:
@@ -121,9 +118,9 @@ namespace MathSyntaxTree
             }
         }
 
-        private T Add()
+        private T Addition()
         {
-            return OperatorHelper<T>.Add(Children[0].Evaluate(), Children[1].Evaluate());
+            return OperatorHelper<T>.Addition(Children[0].Evaluate(), Children[1].Evaluate());
         }
 
         private T Subtract()
@@ -148,38 +145,46 @@ namespace MathSyntaxTree
 
     public static class OperatorHelper<T>
     {
-        public static T Add(T a, T b)
+        public static T Addition(T a, T b)
         {
-            // Add logic for addition based on the type T
-            // Example: for numeric types like double or int, you can use standard addition
+            if (a == null || b == null)
+            {
+                throw new ArgumentNullException("Cannot add null values.");
+            }
+
             return (dynamic)a + (dynamic)b;
         }
 
+
         public static T Subtract(T a, T b)
         {
-            // Add logic for subtraction based on the type T
-            // Example: for numeric types like double or int, you can use standard subtraction
+            if (a == null || b == null)
+            {
+                throw new ArgumentNullException("Cannot add null values.");
+            }
             return (dynamic)a - (dynamic)b;
         }
 
         public static T Multiply(T a, T b)
         {
-            // Add logic for multiplication based on the type T
-            // Example: for numeric types like double or int, you can use standard multiplication
+            if (a == null || b == null)
+            {
+                throw new ArgumentNullException("Cannot add null values.");
+            }
             return (dynamic)a * (dynamic)b;
         }
 
         public static T Divide(T a, T b)
         {
-            // Add logic for division based on the type T
-            // Example: for numeric types like double or int, you can use standard division
+            if (a == null || b == null)
+            {
+                throw new ArgumentNullException("Cannot add null values.");
+            }
             return (dynamic)a / (dynamic)b;
         }
 
         public static bool IsZero(T value)
         {
-            // Add logic to check if the value is zero based on the type T
-            // Example: for numeric types like double or int, you can use standard zero check
             return EqualityComparer<T>.Default.Equals(value, default(T));
         }
     }
@@ -305,7 +310,7 @@ namespace MathSyntaxTree
     {
         static void Main()
         {
-            string mathExpression = "2.2+2.2";
+            string mathExpression = "Ln(10)";
             Tokenizer tokenizer = new Tokenizer();
             List<IToken> infixNotationTokens = tokenizer.Parse(mathExpression);
 

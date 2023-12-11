@@ -39,7 +39,7 @@
         Sin,
         Cos,
         Tan,
-        Sqr,
+        Sqrt,
         Ln,
         Pow,
         Abs,
