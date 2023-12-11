@@ -5,145 +5,200 @@ using System.Reflection;
 
 namespace MathSyntaxTree
 {
-    public interface INode
+    public interface INode<T>
     {
-        double Evaluate();
+        T Evaluate();
     }
 
-    public interface IOperandNode : INode
+    public interface IOperandNode<T> : INode<T>
     {
-        double Value { get; }
+        T Value { get; }
     }
 
-    public interface IOperatorNode : INode
+    public interface IOperatorNode<T> : INode<T>
     {
         OperatorType OperatorType { get; }
-        List<INode> Children { get; }
+        List<INode<T>> Children { get; }
     }
 
-    public interface IFunctionNode : INode
+
+    public interface IFunctionNode<T> : INode<T>
     {
         FunctionType FunctionType { get; }
-        List<INode> Children { get; }
+        List<INode<T>> Children { get; }
     }
 
-    public class MathOperandNode : IOperandNode
+    public class MathOperandNode<T> : IOperandNode<T>
     {
-        public double Value { get; }
+        public T Value { get; }
 
-        public MathOperandNode(double value)
+        public MathOperandNode(T value)
         {
             Value = value;
         }
 
-        public double Evaluate()
+        public T Evaluate()
         {
             return Value;
         }
     }
 
-    public class MathFunctionNode : IFunctionNode
+    public class MathFunctionNode<T> : IFunctionNode<T>
     {
         public FunctionType FunctionType { get; }
-        public List<INode> Children { get; }
+        public List<INode<T>> Children { get; } = new List<INode<T>>();
 
-        public MathFunctionNode(FunctionType functionType, List<INode> children)
+        public MathFunctionNode(FunctionType functionType, List<INode<T>> children)
         {
             FunctionType = functionType;
-            Children = new List<INode>();
-
+            Children.AddRange(children);
         }
-        public double Evaluate()
+
+        public T Evaluate()
         {
             switch (FunctionType)
             {
+                case FunctionType.Str:
+                    if (typeof(T) == typeof(string))
+                    {
+                        // Если тип T - строка, возвращаем строку
+                        string strResult = $"String result: {Children[0].Evaluate()}";
+                        Console.WriteLine(strResult);
+                        return (T)(object)strResult;
+                    }
+                    else
+                    {
+                        // В противном случае выбрасываем исключение, так как Str не применимо к другим типам
+                        throw new InvalidOperationException("Invalid type for Str function");
+                    }
                 case FunctionType.Sin:
-                    return Math.Sin(Children[0].Evaluate());
+                    return (T)(object)Math.Sin(Convert.ToDouble(Children[0].Evaluate()));
                 case FunctionType.Cos:
-                    return Math.Cos(Children[0].Evaluate());
+                    return (T)(object)Math.Cos(Convert.ToDouble(Children[0].Evaluate()));
+                case FunctionType.Tan:
+                    return (T)(object)Math.Tan(Convert.ToDouble(Children[0].Evaluate()));
+                case FunctionType.Sqr:
+                    return (T)(object)Math.Pow(Convert.ToDouble(Children[0].Evaluate()), 2);
+                case FunctionType.Ln:
+                    return (T)(object)Math.Log(Convert.ToDouble(Children[0].Evaluate()));
+                case FunctionType.Pow:
+                    return (T)(object)Math.Pow(Convert.ToDouble(Children[0].Evaluate()), Convert.ToDouble(Children[1].Evaluate()));
+                case FunctionType.Abs:
+                    return (T)(object)Math.Abs(Convert.ToDouble(Children[0].Evaluate()));
+                // Добавьте другие функции по аналогии
                 default:
                     throw new InvalidOperationException("Invalid function type");
             }
         }
+
     }
-    public class MathOperatorNode : IOperatorNode
+
+    public class MathOperatorNode<T> : IOperatorNode<T>
     {
         public OperatorType OperatorType { get; }
-        public List<INode> Children { get; }
+        public List<INode<T>> Children { get; }
 
-        public MathOperatorNode(OperatorType operatorType, params INode[] children)
+        public MathOperatorNode(OperatorType operatorType, params INode<T>[] children)
         {
             OperatorType = operatorType;
             Children = children.ToList();
         }
 
-        public double Evaluate()
+        public T Evaluate()
         {
             switch (OperatorType)
             {
                 case OperatorType.Addition:
-                    return Children[0].Evaluate() + Children[1].Evaluate();
+                    return Add();
                 case OperatorType.Subtraction:
                     return Subtract();
                 case OperatorType.Multiplication:
-                    return Children[0].Evaluate() * Children[1].Evaluate();
+                    return Multiply();
                 case OperatorType.Division:
-                    double divisor = Children[0].Evaluate();
-                    if (Math.Abs(divisor) < double.Epsilon)
-                        throw new DivideByZeroException("Division by zero");
-                    return Children[1].Evaluate() / divisor;
+                    return Divide();
                 default:
                     throw new InvalidOperationException("Invalid operator type");
             }
         }
 
-        private double Subtract()
+        private T Add()
         {
-            if (Children.Count < 2)
-            {
-                throw new InvalidOperationException("Not enough operands for subtraction.");
-            }
+            return OperatorHelper<T>.Add(Children[0].Evaluate(), Children[1].Evaluate());
+        }
 
-            double leftValue = Children[0].Evaluate();
-            double rightValue = Children[1].Evaluate();
+        private T Subtract()
+        {
+            return OperatorHelper<T>.Subtract(Children[0].Evaluate(), Children[1].Evaluate());
+        }
 
-            return rightValue - leftValue;
+        private T Multiply()
+        {
+            return OperatorHelper<T>.Multiply(Children[0].Evaluate(), Children[1].Evaluate());
+        }
+
+        private T Divide()
+        {
+            T divisor = Children[0].Evaluate();
+            if (OperatorHelper<T>.IsZero(divisor))
+                throw new DivideByZeroException("Division by zero");
+
+            return OperatorHelper<T>.Divide(Children[1].Evaluate(), divisor);
         }
     }
 
+    public static class OperatorHelper<T>
+    {
+        public static T Add(T a, T b)
+        {
+            // Add logic for addition based on the type T
+            // Example: for numeric types like double or int, you can use standard addition
+            return (dynamic)a + (dynamic)b;
+        }
+
+        public static T Subtract(T a, T b)
+        {
+            // Add logic for subtraction based on the type T
+            // Example: for numeric types like double or int, you can use standard subtraction
+            return (dynamic)a - (dynamic)b;
+        }
+
+        public static T Multiply(T a, T b)
+        {
+            // Add logic for multiplication based on the type T
+            // Example: for numeric types like double or int, you can use standard multiplication
+            return (dynamic)a * (dynamic)b;
+        }
+
+        public static T Divide(T a, T b)
+        {
+            // Add logic for division based on the type T
+            // Example: for numeric types like double or int, you can use standard division
+            return (dynamic)a / (dynamic)b;
+        }
+
+        public static bool IsZero(T value)
+        {
+            // Add logic to check if the value is zero based on the type T
+            // Example: for numeric types like double or int, you can use standard zero check
+            return EqualityComparer<T>.Default.Equals(value, default(T));
+        }
+    }
+
+
     public class MathASTBuilder
     {
-        public List<INode> BuildSyntaxTree(List<IToken> infixNotationTokens)
+        public List<INode<T>> BuildSyntaxTree<T>(List<IToken> infixNotationTokens)
         {
-            List<INode> tree = new List<INode>();
+            List<INode<T>> tree = new List<INode<T>>();
             Stack<OperatorToken> operatorStack = new Stack<OperatorToken>();
-            Stack<INode> operandStack = new Stack<INode>();
+            Stack<INode<T>> operandStack = new Stack<INode<T>>();
 
             foreach (var token in infixNotationTokens)
             {
-                if (token is OperandToken)
+                if (token is OperandToken<T> operandToken)
                 {
-                    operandStack.Push(new MathOperandNode(((OperandToken)token).Value));
+                    operandStack.Push(new MathOperandNode<T>(operandToken.Value));
                 }
-/*                else if (token is FunctionToken)
-                {
-                    FunctionToken functionToken = (FunctionToken)token;
-
-                    List<INode> argumentNodes = new List<INode>();
-                    foreach (var argument in functionToken.Arguments)
-                    {
-                        if (argument is INode argumentNode)
-                        {
-                            argumentNodes.Add(argumentNode);
-                        }
-                        else
-                        {
-                            throw new InvalidOperationException("Invalid argument type for function node");
-                        }
-                    }
-                    operandStack.Push(new MathFunctionNode(functionToken.FunctionType, argumentNodes));
-                }*/
-
                 else if (token is OperatorToken)
                 {
                     OperatorToken currentOperator = (OperatorToken)token;
@@ -180,6 +235,11 @@ namespace MathSyntaxTree
                         operatorStack.Push(currentOperator);
                     }
                 }
+                else if (token is FunctionToken)
+                {
+                    // Функция - обрабатываем аргументы
+                    operandStack.Push(BuildFunctionNode<T>((FunctionToken)token));
+                }
             }
 
             // Очищаем оставшиеся операторы из стека
@@ -187,13 +247,33 @@ namespace MathSyntaxTree
             {
                 PopAndAddOperatorToTree(operatorStack, operandStack);
             }
-
             tree.AddRange(operandStack.Reverse());
 
             return tree;
         }
 
-        private void PopAndAddOperatorToTree(Stack<OperatorToken> operatorStack, Stack<INode> operandStack)
+        private INode<T> BuildFunctionNode<T>(FunctionToken functionToken)
+        {
+            if (functionToken.FunctionType is not FunctionType.Str)
+            {
+                List<INode<T>> arguments = BuildSyntaxTree<T>(functionToken.Arguments).ToList();
+
+                var functionNode = new MathFunctionNode<T>(functionToken.FunctionType, arguments);
+
+                return functionNode;
+            }
+            else
+            {
+                List<INode<T>> arguments = BuildSyntaxTree<T>(functionToken.Arguments).ToList();
+
+                var functionNode = new MathFunctionNode<T>(functionToken.FunctionType, arguments);
+
+                return functionNode;
+            }
+        }
+
+
+        private void PopAndAddOperatorToTree<T>(Stack<OperatorToken> operatorStack, Stack<INode<T>> operandStack)
         {
             if (operandStack.Count < 2)
             {
@@ -201,8 +281,9 @@ namespace MathSyntaxTree
             }
 
             OperatorToken poppedOperator = operatorStack.Pop();
-            operandStack.Push(new MathOperatorNode(poppedOperator.OperatorType, operandStack.Pop(), operandStack.Pop()));
+            operandStack.Push(new MathOperatorNode<T>(poppedOperator.OperatorType, operandStack.Pop(), operandStack.Pop()));
         }
+
 
         private int GetOperatorPriority(OperatorType operatorType)
         {
@@ -215,7 +296,7 @@ namespace MathSyntaxTree
                 case OperatorType.Subtraction:
                     return 1;
                 default:
-                    return 0; 
+                    return 0;
             }
         }
     }
@@ -224,25 +305,26 @@ namespace MathSyntaxTree
     {
         static void Main()
         {
-            string mathExpression = "Sin()";
+            string mathExpression = "2.2+2.2";
             Tokenizer tokenizer = new Tokenizer();
             List<IToken> infixNotationTokens = tokenizer.Parse(mathExpression);
 
             MathASTBuilder astBuilder = new MathASTBuilder();
-            var rootNode = astBuilder.BuildSyntaxTree(infixNotationTokens);
+            var rootNode = astBuilder.BuildSyntaxTree<double>(infixNotationTokens);
 
             PrintTreeStructure(rootNode[0], 0);
 
             Console.WriteLine($"Syntax Tree Result: {rootNode[0].Evaluate()}");
 
         }
-        static void PrintTreeStructure(INode node, int indentLevel)
+
+        static void PrintTreeStructure<T>(INode<T> node, int indentLevel)
         {
-            if (node is MathOperandNode operandNode)
+            if (node is MathOperandNode<T> operandNode)
             {
                 PrintIndentedLine($"OperandNode: {operandNode.Value}", indentLevel);
             }
-            else if (node is MathOperatorNode operatorNode)
+            else if (node is MathOperatorNode<T> operatorNode)
             {
                 PrintIndentedLine($"OperatorNode: {operatorNode.OperatorType}", indentLevel);
                 foreach (var child in operatorNode.Children)
@@ -256,6 +338,6 @@ namespace MathSyntaxTree
         {
             Console.WriteLine($"{new string(' ', indentLevel * 2)}{text}");
         }
-
     }
+
 }

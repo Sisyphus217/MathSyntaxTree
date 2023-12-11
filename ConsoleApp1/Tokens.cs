@@ -3,11 +3,11 @@
 
     public interface IToken { }
 
-    public class OperandToken : IToken
+    public class OperandToken<T> : IToken
     {
-        public double Value { get; }
+        public T Value { get; }
 
-        public OperandToken(double value)
+        public OperandToken(T value)
         {
             Value = value;
         }
@@ -54,6 +54,8 @@
     {
         public FunctionType FunctionType { get; }
         public List<IToken> Arguments { get; set; } = new List<IToken>();
+        public int OpenParenthesesCount { get; set; }
+        public int CloseParenthesesCount { get; set; }
 
         public FunctionToken(FunctionType functionType)
         {

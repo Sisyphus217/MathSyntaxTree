@@ -43,17 +43,27 @@ namespace MathSyntaxTree
                 if (_valueTokenBuilder.Length > 0)
                 {
                     var variable = _valueTokenBuilder.ToString();
-                    if (!IsFunctionName(variable))
+                    if (_insideFunctionArgs && _currentFunctionToken != null)
                     {
+                        var operandToken = CreateOperandToken(variable);
+                        _currentFunctionToken.Arguments.Add(operandToken);
+                        _valueTokenBuilder.Clear();
+                    }
+                    else if (!IsFunctionName(variable))
+                    {
+                        // Создание обычного операнда
                         var token = CreateOperandToken(variable);
                         _infixNotationTokens.Add(token);
                         _valueTokenBuilder.Clear();
                     }
                     else
                     {
+                        // Создание функционального токена и вход в режим аргументов функции
                         var token = CreateFunctionToken(variable);
                         _infixNotationTokens.Add(token);
                         _valueTokenBuilder.Clear();
+                        _insideFunctionArgs = true;
+                        _currentFunctionToken = token as FunctionToken;
                     }
 
                 }
@@ -100,17 +110,34 @@ namespace MathSyntaxTree
                     _infixNotationTokens.Add(operatorToken);
                 }
 
-                if (next == ')' && _insideFunctionArgs)
+                if (next == ')' && _insideFunctionArgs && _currentFunctionToken != null)
                 {
                     // Если это закрывающая скобка и мы внутри аргументов функции, выходим из режима аргументов
-                    _insideFunctionArgs = false;
+                    if (_currentFunctionToken.OpenParenthesesCount == _currentFunctionToken.CloseParenthesesCount + 1)
+                    {
+                        _insideFunctionArgs = false;
+                    }
                 }
             }
             else
             {
                 _valueTokenBuilder.Append(next);
             }
+
+            // Обновление количества открытых и закрытых скобок внутри функции
+            if (_insideFunctionArgs && _currentFunctionToken != null)
+            {
+                if (next == '(')
+                {
+                    _currentFunctionToken.OpenParenthesesCount++;
+                }
+                else if (next == ')')
+                {
+                    _currentFunctionToken.CloseParenthesesCount++;
+                }
+            }
         }
+
 
         private static bool IsOperatorCharacter(char c) => c switch
         {
@@ -139,9 +166,17 @@ namespace MathSyntaxTree
                 CultureInfo.InvariantCulture,
                 out double result))
             {
-                return new OperandToken(result);
+                return new OperandToken<double>(result);
             }
-            throw new SyntaxException($"The operand {raw} has an invalid format.");
+            else if (_insideFunctionArgs && _currentFunctionToken != null &&
+                     _currentFunctionToken.FunctionType == FunctionType.Str)
+            {
+                return new OperandToken<string>(raw);
+            }
+            else
+            {
+                throw new SyntaxException($"The operand {raw} has an invalid format.");
+            }
         }
 
         private static IToken CreateFunctionToken(string raw)
@@ -167,19 +202,6 @@ namespace MathSyntaxTree
                 _ => throw new SyntaxException($"There's no a suitable operator for the char {c}"),
             };
         }
-/*        private static IToken AddFunctionArgs(string functionName, List<IToken> currentTokens)
-        {
-            FunctionToken functionToken = new FunctionToken(Enum.Parse<FunctionType>(functionName, ignoreCase: true));
-
-            // Collect function arguments
-            while (currentTokens.Count > 0 && currentTokens.Last() is not OperatorToken opToken)
-            {
-                functionToken.Arguments.Add(currentTokens.Last());
-                currentTokens.RemoveAt(currentTokens.Count - 1);
-            }
-
-            return functionToken;
-        }*/
 
         private List<IToken> GetResult()
         {
